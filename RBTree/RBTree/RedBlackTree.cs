@@ -6,6 +6,12 @@ using System.Threading.Tasks;
 
 namespace RBTree
 {
+    /// <summary>
+    ///     A Left Leaning Red Black Tree implementation based upon that by
+    ///     Robert Sedgewick of Princeton University.
+    /// </summary>
+    /// <typeparam name="Key">The search key used by the tree's Nodes</typeparam>
+    /// <typeparam name="Value">The value stored in the tree's Nodes</typeparam>
     class RedBlackTree<Key, Value> 
         where Key: IComparable<Key> 
         where Value: Nullable
@@ -218,11 +224,279 @@ namespace RBTree
         #endregion
 
         #region RedBlackDeletion
-        //TODO: Implement the deletion methods
+        
+        /// <summary>
+        ///     Public function to delete the node in the RB tree with the smallest key
+        /// </summary>
+        public void deleteMin()
+        {
+            if (isEmpty())
+                throw new InvalidOperationException("Tree Underflow");
+
+            //If the root's children are both black, temporarily set root to red
+            if (!isRed(root.Left) && !isRed(root.Right))
+                root.Color = RED;
+
+            //call to actually perform deletion
+            root = deleteMin(root);
+
+            //restore root to black
+            if (!isEmpty())
+                root.Color = BLACK;
+        }
+
+        /// <summary>
+        ///     Delete the node with the minimum key based on a given root.
+        /// </summary>
+        /// <param name="x">The given root</param>
+        /// <returns>The new root for this subtree</returns>
+        private Node deleteMin(Node x)
+        {
+            //If there is nothing smaller than the given root node,
+            //then it is the smallest key and should be deleted
+            if (x.Left == null)
+                return null;
+
+            if (!isRed(x.Left) && !isRed(x.Left.Left))
+                x = moveRedLeft(x);
+
+            //recursive call to perform deletion
+            x.Left = deleteMin(x.Left);
+
+            return balance(x);
+        }
+
+        /// <summary>
+        ///     Public function to delete the node in the RB tree with the largest key
+        /// </summary>
+        public void deleteMax()
+        {
+            if (isEmpty())
+                throw new InvalidOperationException("Tree Underflow");
+
+            if(!isRed(root.Left) && !isRed(root.Right))
+            {
+                root.Color = RED;
+            }
+
+            root = deleteMax(root);
+
+            if (!isEmpty())
+                root.Color = BLACK;
+        }
+
+        /// <summary>
+        ///     Delete the node with the maximum key based on a given root.
+        /// </summary>
+        /// <param name="x">The given root</param>
+        /// <returns>The new root for this subtree</returns>
+        private Node deleteMax(Node x)
+        {
+            if (isRed(x.Left))
+                x = rotateRight(x);
+
+            if (x.Right == null)
+                return null;
+
+            if (!isRed(x.Right) && !isRed(x.Right.Left))
+                x = moveRedRight(x);
+
+            x.Right = deleteMax(x.Right);
+
+            return balance(x);
+        }
+        
+        /// <summary>
+        ///     Delete the key from the red black tree.
+        /// </summary>
+        /// <param name="key">The key to delete.</param>
+        private void delete(Key key)
+        {
+            if (!contains(key))
+            {
+                throw new ArgumentException("The key is not within the search tree.");
+            }
+
+            if(!isRed(root.Left) && !isRed(root.Right))
+            {
+                root.Color = RED;
+            }
+
+            root = delete(root, key);
+
+            if (!isEmpty())
+                root.Color = BLACK;
+        }
+
+        /// <summary>
+        ///     Delete the node with the given key from the subtree.
+        /// </summary>
+        /// <param name="h">The root of the given subtree</param>
+        /// <param name="key">The key to delete</param>
+        /// <returns>The new root of the subtree</returns>
+        private Node delete(Node h, Key key)
+        {
+            if (key.CompareTo(h.Key) < 0)
+            {
+                if (!isRed(h.Left) && !isRed(h.Left.Left))
+                    h = moveRedLeft(h);
+
+                h.Left = delete(h.Left, key);
+            }
+            else
+            {
+                if(isRed(h.Left))
+                    h = rotateRight(h);
+                if(key.CompareTo(h.Key) ==  0 && h.Right == null)
+                    return null;
+                if (!isRed(h.Right) && !isRed(h.Right.Left))
+                    h = moveRedRight(h);
+                if (key.CompareTo(h.Key) == 0)
+                {
+                    Node x = min(h.Right);
+                    h.Key = x.Key;
+                    h.Val = x.Val;
+                    h.Right = deleteMin(h.Right);
+                }
+                else
+                    h.Right = delete(h.Right, key);
+            }
+
+            return balance(h);
+        }
+
         #endregion
 
         #region RedBlackTreeHelperMethods
-            //TODO: Implement the helper methods
+            
+        /// <summary>
+        ///     Rotate the subtree at h to the right
+        ///     (AVL Tree style)
+        /// </summary>
+        /// <param name="h">The root of this subtree</param>
+        /// <returns>The new root to the subtree</returns>
+        private Node rotateRight(Node h)
+        {
+            Node x = h.Left;
+            h.Left = x.Right;
+            x.Right = h;
+
+            x.Color = x.Right.Color;
+            x.Right.Color = RED;
+
+            x.N = h.N;
+            h.N = size(h.Left) + size(h.Right) + 1;
+
+            return x;
+        }
+
+        /// <summary>
+        ///     Rotate the subtree at h to the left
+        ///     (AVL Tree style)
+        /// </summary>
+        /// <param name="h">The root of this subtree</param>
+        /// <returns>The new root to the subtree</returns>
+        private Node rotateLeft(Node h)
+        {
+            Node x = h.Right;
+            h.Right = x.Left;
+            x.Left = h;
+
+            x.Color = x.Left.Color;
+            x.Left.Color = RED;
+
+            x.N = h.N;
+            h.N = size(h.Left) + size(h.Right) + 1;
+
+            return x;
+        }
+
+        /// <summary>
+        ///     Flip the colors of a root, h, and its two children.
+        ///     Precondition: h and its children must not be null and
+        ///     h must have opposite color of its two children.
+        /// </summary>
+        /// <param name="h">The root of this subtree</param>
+        private void flipColors(Node h)
+        {
+            h.Color = !h.Color;
+            h.Left.Color = !h.Left.Color;
+            h.Right.Color = !h.Right.Color;
+        }
+
+        /// <summary>
+        ///     Make h.left or one of its children red.
+        ///     Precondition: h is red and h.left and h.left.left are black
+        /// </summary>
+        /// <param name="h">The root of the subtree</param>
+        /// <returns>The new root of the subtree</returns>
+        private Node moveRedLeft(Node h)
+        {
+            flipColors(h);
+
+            if (isRed(h.Right.Left))
+            {
+                h.Right = rotateRight(h.Right);
+                h = rotateLeft(h);
+                flipColors(h);
+            }
+
+            return h;
+        }
+
+        /// <summary>
+        ///     Make h.right or one of its children black.
+        ///     Precondition: h is red and both h.right and h.right.left are black.
+        /// </summary>
+        /// <param name="h">The root of the subtree</param>
+        /// <returns>The new root of the subtree</returns>
+        private Node moveRedRight(Node h)
+        {
+            flipColors(h);
+
+            if (isRed(h.Left.Left))
+            {
+                h = rotateRight(h);
+                flipColors(h);
+            }
+
+            return h;
+        }
+
+        /// <summary>
+        ///     Restore red-black tree balance
+        /// </summary>
+        /// <param name="h">The root of this subtree</param>
+        /// <returns>The new root of the subtree</returns>
+        private Node balance(Node h)
+        {
+            if (isRed(h.Right))
+                h = rotateLeft(h);
+            if (isRed(h.Left) && isRed(h.Left.Left))
+                h = rotateRight(h);
+            if (isRed(h.Left) && isRed(h.Right))
+                flipColors(h);
+
+            h.N = size(h.Left) + size(h.Right) + 1;
+
+            return h;
+        }
+        #endregion
+
+        #region UtilityMethods
+            //TODO: Implement Utility Methods
+        #endregion
+
+        #region OrderedSymbolTableMethods
+            //TODO: Implement Ordered Symbol Table Methods
+        #endregion
+
+        #region RangeCountAndSearchMethods
+            //TODO: Implement Range Count and Range Search methods
+        #endregion
+
+        #region IntegrityCheckMethods
+            //TODO: Implement Integrity Check Methods
         #endregion
     }
 }
