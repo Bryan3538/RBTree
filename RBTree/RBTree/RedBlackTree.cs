@@ -12,16 +12,17 @@ namespace RBTree
     /// </summary>
     /// <typeparam name="Key">The search key used by the tree's Nodes</typeparam>
     /// <typeparam name="Value">The value stored in the tree's Nodes</typeparam>
-    class RedBlackTree<Key, Value> 
-        where Key: IComparable<Key> 
-        where Value: Nullable
+    public class RedBlackTree<Key, Value> 
+        where Key: IComparable<Key>
     {
-        private static const bool RED = true;
-        private static const bool BLACK = false;
+        private const bool RED = true;
+        private const bool BLACK = false;
 
         private Node root; //the root of the tree
 
-        //Node helper class
+        /// <summary>
+        ///     Class representing the Nodes of the tree.
+        /// </summary>
         private class Node
         {
             private Key key;            //Key
@@ -154,7 +155,7 @@ namespace RBTree
                     return x.Val;   //If neither, then you found it
             }
 
-            return null;            //If never found, return null
+            return default(Value);            //If never found, return null
         }
 
         /// <summary>
@@ -164,7 +165,7 @@ namespace RBTree
         /// <returns>True if the object is in the tree; false otherwise.</returns>
         public bool contains(Key key)
         {
-            return get(key) != null;
+            return !(get(key).Equals(default(Value)));
         }
 
         #endregion
@@ -484,15 +485,305 @@ namespace RBTree
         #endregion
 
         #region UtilityMethods
-            //TODO: Implement Utility Methods
+        /// <summary>
+        ///     Find the height of the entire tree.
+        /// </summary>
+        /// <returns>The height of the tree.</returns>
+        public int height() { return height(root); }
+
+        /// <summary>
+        ///     Find the height of the given subtree.
+        /// </summary>
+        /// <param name="x">The root of this subtree.</param>
+        /// <returns>The height of the subtree or -1 if the root is null.</returns>
+        private int height(Node x)
+        {
+            if (x == null)
+                return -1;
+            else
+                return 1 + Math.Max(height(x.Left), height(x.Right));
+        }
         #endregion
 
         #region OrderedSymbolTableMethods
-            //TODO: Implement Ordered Symbol Table Methods
+
+        /// <summary>
+        ///     Find the smallest Key within the tree.
+        /// </summary>
+        /// <returns>The smallest Key in this tree or Key's default value otherwise.</returns>
+        public Key min()
+        {
+            if (isEmpty()) 
+                return default(Key);
+            else
+                return min(root).Key;
+        }
+
+        /// <summary>
+        ///     Find the Node with the smallest Key in the given subtree.
+        /// </summary>
+        /// <param name="x">The root of the subtree</param>
+        /// <returns>The Node with the smallest Key in the subtree.</returns>
+        private Node min(Node x)
+        {
+            if (x.Left == null) 
+                return x;
+            else 
+                return min(x.Left);
+        }
+
+        /// <summary>
+        ///     Find the largest Key in the tree.
+        /// </summary>
+        /// <returns>The largest key in this tree.</returns>
+        public Key max()
+        {
+            if (isEmpty()) 
+                return default(Key);
+            else    
+                return max(root).Key;
+        }
+
+        /// <summary>
+        ///     Find the Node with the largest Key in the given subtree.
+        /// </summary>
+        /// <param name="x">The root of the subtree.</param>
+        /// <returns>The Node with the largest Key in the subtree.</returns>
+        private Node max(Node x)
+        {
+            if (x.Right == null) 
+                return x;
+            else    
+                return max(x.Right);
+        }
+
+        /// <summary>
+        ///     Find the largest key less than or equal to the given key
+        /// </summary>
+        /// <param name="key">The key used for comparisons</param>
+        /// <returns>The largest key less than or equal to the given key</returns>
+        public Key floor(Key key)
+        {
+            Node x = floor(root, key);
+            if (x == null)
+                return default(Key);
+            else
+                return x.Key;
+        }
+
+        /// <summary>
+        ///     The Node whose Key is the largest Key which is less than or equal
+        ///     to the given key in the given subtree.
+        /// </summary>
+        /// <param name="x">The Node of the subtree.</param>
+        /// <param name="key">The key to be compared to.</param>
+        /// <returns>The Node with the largest key less than or equal to key.</returns>
+        private Node floor(Node x, Key key)
+        {
+            if (x == null)
+                return null;
+
+            int cmp = key.CompareTo(x.Key);
+
+            if (cmp == 0)
+                return x;
+            else if (cmp < 0)
+                return floor(x.Left, key);
+            else
+            {
+                //This preserves the fact that the returned value is always
+                //<= the key given
+                Node t = floor(x.Right, key);
+                if (t != null)
+                    return t;
+                else
+                    return x;
+            }
+        }
+
+        /// <summary>
+        ///     Find the largest key less than or equal to the given key
+        /// </summary>
+        /// <param name="key">The key used for comparisons</param>
+        /// <returns>The largest key less than or equal to the given key</returns>
+        public Key ceiling(Key key)
+        {
+            Node x = ceiling(root, key);
+            if (x == null)
+                return default(Key);
+            else
+                return x.Key;
+        }
+
+        /// <summary>
+        ///     The Node whose Key is the smallest Key which is greater than or equal
+        ///     to the given key in the given subtree.
+        /// </summary>
+        /// <param name="x">The Node of the subtree.</param>
+        /// <param name="key">The key to be compared to.</param>
+        /// <returns>The Node with the smallest key greater than or equal to key.</returns>
+        private Node ceiling(Node x, Key key)
+        {
+            if (x == null)
+                return null;
+
+            int cmp = key.CompareTo(x.Key);
+
+            if (cmp == 0)
+                return x;
+            else if (cmp > 0)
+                return ceiling(x.Right, key);
+            else
+            {
+                //This preserves the fact that the returned value is always
+                //>= the key given
+                Node t = ceiling(x.Left, key);
+                if (t != null)
+                    return t;
+                else
+                    return x;
+            }
+        }
+
+        /// <summary>
+        ///     Find the Node of rank k in the tree. 
+        ///     i.e. Its index in the sorted list of Nodes in the tree.
+        /// </summary>
+        /// <param name="k">The rank to find.</param>
+        /// <returns>The key to the Node with the given rank.</returns>
+        public Key select(int k)
+        {
+            if (k < 0 || k >= size())
+                return default(Key);
+            else
+            {
+                Node x = select(root, k);
+                return x.Key;
+            }
+        }
+
+        /// <summary>
+        ///     Find the node of rank k in the given subtree.
+        /// </summary>
+        /// <param name="x">The root of the subtree.</param>
+        /// <param name="k">The rank to find.</param>
+        /// <returns>The node with the given rank.</returns>
+        private Node select(Node x, int k)
+        {
+            int t = size(x.Left);
+
+            //if the left subtree of the tree has more elements than k, then
+            //the key is within this part of the tree
+            if (t > k)
+                return select(x.Left, k);
+            //if there are not enough elements in the left side, then it must be
+            //in the right side of the tree. The rank must be adjusted for this.
+            else if (t < k)
+                return select(x.Right, k - t - 1);
+            else //we are at that rank already
+                return x;
+        }
+
+        /// <summary>
+        ///     Find the number of Keys less than the provided key.
+        /// </summary>
+        /// <param name="key">The provided key.</param>
+        /// <returns>The number of Keys less than key.</returns>
+        public int rank(Key key)
+        {
+            return rank(key, root);
+        }
+
+        /// <summary>
+        ///     Find the number of Keys less than the provided key in the given
+        ///     subtree.
+        /// </summary>
+        /// <param name="key">The provided key.</param>
+        /// <param name="x">The root of the given subtree.</param>
+        /// <returns>The number of Keys less than key in this subtree.</returns>
+        private int rank(Key key, Node x)
+        {
+            if (x == null) return 0;
+
+            int cmp = key.CompareTo(x.Key);
+
+            if (cmp < 0)
+                return rank(key, x.Left);
+            else if (cmp > 0)
+                return 1 + size(x.Left) + rank(key, x.Right);
+            else
+                return size(x.Left);
+        }
+
         #endregion
 
         #region RangeCountAndSearchMethods
-            //TODO: Implement Range Count and Range Search methods
+
+        /// <summary>
+        ///     Retrieve an enumerable list of all keys in the tree.
+        /// </summary>
+        /// <returns>An enumerable list of all keys in this tree.</returns>
+        public IEnumerable<Key> keys()
+        {
+            return keys(min(), max());
+        }
+
+        /// <summary>
+        ///     Get an enumerable list of all keys between lo and hi in the tree.
+        /// </summary>
+        /// <param name="lo">The lower bound of keys to add to the list.</param>
+        /// <param name="hi">The upper bound of keys to add to the list.</param>
+        /// <returns>An enumerable list of all keys between lo and hi in the tree.</returns>
+        private IEnumerable<Key> keys(Key lo, Key hi)
+        {
+            Queue<Key> queue = new Queue<Key>();
+            keys(root, queue, lo, hi);
+            return queue;
+        }
+
+        /// <summary>
+        ///     Fill the provided enumerable list with all keys
+        ///     in the given subtree between two points.
+        /// </summary>
+        /// <param name="x">The root of the given subtree.</param>
+        /// <param name="queue">The provided enumerable list.</param>
+        /// <param name="lo">The lower bound of keys to add to the list.</param>
+        /// <param name="hi">The upper bound of keys to add to the list.</param>
+        private void keys(Node x, Queue<Key> queue, Key lo, Key hi)
+        {
+            if (x == null)
+                return;
+
+            int cmplo = lo.CompareTo(x.Key);
+            int cmphi = hi.CompareTo(x.Key);
+
+            //if lo is lower than this Node's key, add keys to the left
+            if (cmplo < 0)
+                keys(x.Left, queue, lo, hi);
+            //if this key is within range, add it
+            if (cmplo <= 0 && cmphi >= 0)
+                queue.Enqueue(x.Key);
+            //if hi is higher than this Node's key, add keys to the right
+            if (cmphi > 0)
+                keys(x.Right, queue, lo, hi);
+        }
+
+        /// <summary>
+        ///     Find the number of keys in the tree between lo and hi.
+        /// </summary>
+        /// <param name="lo">The lower bound of keys to count.</param>
+        /// <param name="hi">The upper bound of keys to count.</param>
+        /// <returns>The number of keys in the tree between lo and hi.</returns>
+        public int size(Key lo, Key hi)
+        {
+            if (lo.CompareTo(hi) > 0) 
+                return 0;
+            if (contains(hi)) 
+                return rank(hi) - rank(lo) + 1;
+            else 
+                return rank(hi) - rank(lo);
+        }
+
         #endregion
 
         #region IntegrityCheckMethods
