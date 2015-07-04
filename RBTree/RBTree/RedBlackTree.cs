@@ -18,12 +18,12 @@ namespace RBTree
         private const bool RED = true;
         private const bool BLACK = false;
 
-        private Node root; //the root of the tree
+        protected Node root; //the root of the tree
 
         /// <summary>
         ///     Class representing the Nodes of the tree.
         /// </summary>
-        private class Node
+        protected class Node
         {
             private Key key;            //Key
 
@@ -87,7 +87,7 @@ namespace RBTree
         /// </summary>
         /// <param name="x">A Node in the Red-Black Tree</param>
         /// <returns>True if the node is red; false if it is black or null</returns>
-        private bool isRed(Node x)
+        protected bool isRed(Node x)
         {
             if (x == null) return false;
             return (x.Color == RED);
@@ -784,10 +784,6 @@ namespace RBTree
                 return rank(hi) - rank(lo);
         }
 
-        #endregion
-
-        #region IntegrityCheckMethods
-            //TODO: Implement Integrity Check Methods
         #endregion
     }
 }
